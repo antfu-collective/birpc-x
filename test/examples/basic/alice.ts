@@ -34,13 +34,13 @@ const buyApples = defineAliceFunction({
   setup: async (context) => {
     return {
       handler: (count: number) => {
-        const cost = count * 2
-        if (context.balance >= cost) {
-          context.balance -= cost
-          context.apples += count
+        const earnings = count * 2
+        if (context.apples >= count) {
+          context.balance += earnings
+          context.apples -= count
         }
         else {
-          throw new Error('Insufficient balance')
+          throw new Error('Insufficient apples')
         }
       },
     }

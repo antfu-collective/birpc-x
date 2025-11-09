@@ -53,12 +53,25 @@ describe('should', () => {
 
     await bobToAlice.buyApples(3)
 
-    expect(await bobToAlice.getAppleCount()).toBe(8)
-    expect(await aliceToBob.getMoney()).toBe(50)
+    expect(await bobToAlice.getAppleCount()).toBe(2)
+    expect(await bobToAlice.getBalance()).toBe(107)
+
+    await expect(() => bobToAlice.buyApples(3))
+      .rejects
+      .toThrowErrorMatchingInlineSnapshot(`[Error: Insufficient apples]`)
 
     // @ts-expect-error missing types
     await expect(() => aliceToBob.foo())
       .rejects
       .toThrowErrorMatchingInlineSnapshot(`[Error: [birpc] function "foo" not found]`)
+
+    // Call handlers directly
+    expect(bobCollector.getHandler('getMoney')).toBeDefined()
+    expect(
+      await aliceCollector
+        .getHandler('getBalance')
+        .then(handler => handler()),
+    )
+      .toBe(107)
   })
 })

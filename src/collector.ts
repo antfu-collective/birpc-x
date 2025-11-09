@@ -50,7 +50,10 @@ export async function getRpcHandler<
   return result.handler
 }
 
-export class RpcFunctionsCollectorBase<LocalFunctions, SetupContext> implements RpcFunctionsCollector<LocalFunctions, SetupContext> {
+export class RpcFunctionsCollectorBase<
+  LocalFunctions extends Record<string, any>,
+  SetupContext,
+> implements RpcFunctionsCollector<LocalFunctions, SetupContext> {
   public readonly definitions: Map<string, RpcFunctionDefinition<string, any, any, any, SetupContext>> = new Map()
   public readonly functions: LocalFunctions
 
@@ -83,17 +86,33 @@ export class RpcFunctionsCollectorBase<LocalFunctions, SetupContext> implements 
     }) as LocalFunctions
   }
 
-  register(fn: RpcFunctionDefinition<string, any, any, any, SetupContext>): void {
-    if (this.definitions.has(fn.name)) {
+  register(fn: RpcFunctionDefinition<string, any, any, any, SetupContext>, force = false): void {
+    if (this.definitions.has(fn.name) && !force) {
       throw new Error(`RPC function "${fn.name}" is already registered`)
     }
     this.definitions.set(fn.name, fn)
   }
 
-  update(fn: RpcFunctionDefinition<string, any, any, any, SetupContext>): void {
-    if (!this.definitions.has(fn.name)) {
+  update(fn: RpcFunctionDefinition<string, any, any, any, SetupContext>, force = false): void {
+    if (!this.definitions.has(fn.name) && !force) {
       throw new Error(`RPC function "${fn.name}" is not registered. Use register() to add new functions.`)
     }
     this.definitions.set(fn.name, fn)
+  }
+
+  async getHandler<T extends keyof LocalFunctions>(name: T): Promise<LocalFunctions[T]> {
+    return await getRpcHandler(this.definitions.get(name as string)!, this.context) as LocalFunctions[T]
+  }
+
+  has(name: string): boolean {
+    return this.definitions.has(name)
+  }
+
+  get(name: string): RpcFunctionDefinition<string, any, any, any, SetupContext> | undefined {
+    return this.definitions.get(name)
+  }
+
+  list(): string[] {
+    return Array.from(this.definitions.keys())
   }
 }
