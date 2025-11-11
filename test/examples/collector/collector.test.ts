@@ -43,11 +43,14 @@ describe('collector', () => {
         "buyApples": Promise {},
         "getAppleCount": Promise {},
         "getBalance": Promise {},
+        "hi": Promise {},
       }
     `)
   })
 
   it('calling', async () => {
+    expect(await bobToAlice.hi()).toBe('hi')
+
     expect(await aliceToBob.getMoney()).toBe(50)
     expect(await bobToAlice.getBalance()).toBe(101)
 

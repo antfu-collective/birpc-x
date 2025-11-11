@@ -8,7 +8,7 @@ export type EntriesToObject<T extends readonly [string, any][]> = {
 
 /**
  * Type of the RPC function,
- * - static: A function that returns a static data (can be cached and dumped)
+ * - static: A function that returns a static data, no arguments (can be cached and dumped)
  * - action: A function that performs an action (no data returned)
  * - query: A function that queries a resource
  */
@@ -40,17 +40,22 @@ export interface RpcFunctionDefinition<
 > {
   name: NAME
   type: TYPE
-  setup: (context: CONTEXT) => Thenable<RpcFunctionSetupResult<ARGS, RETURN>>
+  setup?: (context: CONTEXT) => Thenable<RpcFunctionSetupResult<ARGS, RETURN>>
   handler?: (...args: ARGS) => RETURN
   __resolved?: RpcFunctionSetupResult<ARGS, RETURN>
   __promise?: Thenable<RpcFunctionSetupResult<ARGS, RETURN>>
 }
 
+export type RpcFunctionDefinitionToFunction<T extends RpcFunctionDefinitionAny>
+  = T extends RpcFunctionDefinition<string, any, infer ARGS, infer RETURN, any>
+    ? ((...args: ARGS) => RETURN)
+    : never
+
 export type RpcFunctionDefinitionAny = RpcFunctionDefinition<string, any, any, any, any>
 export type RpcFunctionDefinitionAnyWithContext<CONTEXT = undefined> = RpcFunctionDefinition<string, any, any, any, CONTEXT>
 
 export type RpcDefinitionsToFunctions<T extends readonly RpcFunctionDefinitionAny[]> = EntriesToObject<{
-  [K in keyof T]: [T[K]['name'], Awaited<ReturnType<T[K]['setup']>>['handler']]
+  [K in keyof T]: [T[K]['name'], RpcFunctionDefinitionToFunction<T[K]>]
 }>
 
 export type RpcDefinitionsFilter<

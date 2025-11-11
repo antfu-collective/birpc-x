@@ -40,6 +40,9 @@ export async function getRpcHandler<
   if (definition.__resolved?.handler) {
     return definition.__resolved.handler
   }
+  if (!definition.setup) {
+    throw new Error(`[birpc-x] Either handler or setup function must be provided for RPC function "${definition.name}"`)
+  }
   definition.__promise ??= Promise.resolve(definition.setup(context))
     .then((r) => {
       definition.__resolved = r

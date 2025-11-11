@@ -59,10 +59,19 @@ const getAppleCount = defineAliceFunction({
   },
 })
 
+const hi = defineAliceFunction({
+  name: 'hi',
+  type: 'static',
+  handler: () => {
+    return 'hi'
+  },
+})
+
 export const functionDefs = [
   getBalance,
   buyApples,
   getAppleCount,
+  hi,
 ] as const
 
 declare module './shared-types' {
