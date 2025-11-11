@@ -17,9 +17,9 @@ export type RpcFunctionType = 'static' | 'action' | 'query'
 export interface RpcFunctionsCollector<LocalFunctions, SetupContext = undefined> {
   context: SetupContext
   readonly functions: LocalFunctions
-  readonly definitions: Map<string, RpcFunctionDefinition<string, any, any, any, SetupContext>>
-  register: (fn: RpcFunctionDefinition<string, any, any, any, SetupContext>) => void
-  update: (fn: RpcFunctionDefinition<string, any, any, any, SetupContext>) => void
+  readonly definitions: Map<string, RpcFunctionDefinitionAnyWithContext<SetupContext>>
+  register: (fn: RpcFunctionDefinitionAnyWithContext<SetupContext>) => void
+  update: (fn: RpcFunctionDefinitionAnyWithContext<SetupContext>) => void
 }
 
 export interface RpcFunctionSetupResult<
@@ -46,12 +46,15 @@ export interface RpcFunctionDefinition<
   __promise?: Thenable<RpcFunctionSetupResult<ARGS, RETURN>>
 }
 
-export type RpcDefinitionsToFunctions<T extends readonly RpcFunctionDefinition<any, any, any, any, any>[]> = EntriesToObject<{
+export type RpcFunctionDefinitionAny = RpcFunctionDefinition<string, any, any, any, any>
+export type RpcFunctionDefinitionAnyWithContext<CONTEXT = undefined> = RpcFunctionDefinition<string, any, any, any, CONTEXT>
+
+export type RpcDefinitionsToFunctions<T extends readonly RpcFunctionDefinitionAny[]> = EntriesToObject<{
   [K in keyof T]: [T[K]['name'], Awaited<ReturnType<T[K]['setup']>>['handler']]
 }>
 
 export type RpcDefinitionsFilter<
-  T extends readonly RpcFunctionDefinition<any, any, any>[],
+  T extends readonly RpcFunctionDefinitionAny[],
   Type extends RpcFunctionType,
 > = {
   [K in keyof T]: T[K] extends { type: Type } ? T[K] : never
