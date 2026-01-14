@@ -35,12 +35,14 @@ export interface RpcFunctionSetupResult<
 export interface RpcFunctionDefinition<
   NAME extends string,
   TYPE extends RpcFunctionType,
+  CACHECABLE extends boolean = false,
   ARGS extends any[] = [],
   RETURN = void,
   CONTEXT = undefined,
 > {
   name: NAME
   type: TYPE
+  cacheable?: CACHECABLE
   setup?: (context: CONTEXT) => Thenable<RpcFunctionSetupResult<ARGS, RETURN>>
   handler?: (...args: ARGS) => RETURN
   __resolved?: RpcFunctionSetupResult<ARGS, RETURN>
@@ -48,12 +50,12 @@ export interface RpcFunctionDefinition<
 }
 
 export type RpcFunctionDefinitionToFunction<T extends RpcFunctionDefinitionAny>
-  = T extends RpcFunctionDefinition<string, any, infer ARGS, infer RETURN, any>
+  = T extends RpcFunctionDefinition<string, any, boolean, infer ARGS, infer RETURN, any>
     ? ((...args: ARGS) => RETURN)
     : never
 
-export type RpcFunctionDefinitionAny = RpcFunctionDefinition<string, any, any, any, any>
-export type RpcFunctionDefinitionAnyWithContext<CONTEXT = undefined> = RpcFunctionDefinition<string, any, any, any, CONTEXT>
+export type RpcFunctionDefinitionAny = RpcFunctionDefinition<string, any, boolean, any, any, any>
+export type RpcFunctionDefinitionAnyWithContext<CONTEXT = undefined> = RpcFunctionDefinition<string, any, boolean, any, any, CONTEXT>
 
 export type RpcDefinitionsToFunctions<T extends readonly RpcFunctionDefinitionAny[]> = EntriesToObject<{
   [K in keyof T]: [T[K]['name'], RpcFunctionDefinitionToFunction<T[K]>]

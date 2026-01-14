@@ -3,11 +3,12 @@ import type { RpcFunctionDefinition, RpcFunctionsCollector, RpcFunctionType } fr
 export function defineRpcFunction<
   NAME extends string,
   TYPE extends RpcFunctionType,
-  ARGS extends any[],
+  CACHECABLE extends boolean = false,
+  ARGS extends any[] = [],
   RETURN = void,
 >(
-  definition: RpcFunctionDefinition<NAME, TYPE, ARGS, RETURN>,
-): RpcFunctionDefinition<NAME, TYPE, ARGS, RETURN> {
+  definition: RpcFunctionDefinition<NAME, TYPE, CACHECABLE, ARGS, RETURN>,
+): RpcFunctionDefinition<NAME, TYPE, CACHECABLE, ARGS, RETURN> {
   return definition
 }
 
@@ -15,11 +16,12 @@ export function createDefineWrapperWithContext<CONTEXT>() {
   return function defineRpcFunctionWithContext<
     NAME extends string,
     TYPE extends RpcFunctionType,
-    ARGS extends any[],
+    CACHECABLE extends boolean = false,
+    ARGS extends any[] = [],
     RETURN = void,
   >(
-    definition: RpcFunctionDefinition<NAME, TYPE, ARGS, RETURN, CONTEXT>,
-  ): RpcFunctionDefinition<NAME, TYPE, ARGS, RETURN, CONTEXT> {
+    definition: RpcFunctionDefinition<NAME, TYPE, CACHECABLE, ARGS, RETURN, CONTEXT>,
+  ): RpcFunctionDefinition<NAME, TYPE, CACHECABLE, ARGS, RETURN, CONTEXT> {
     return definition
   }
 }
@@ -27,11 +29,12 @@ export function createDefineWrapperWithContext<CONTEXT>() {
 export async function getRpcHandler<
   NAME extends string,
   TYPE extends RpcFunctionType,
-  ARGS extends any[],
+  CACHECABLE extends boolean = false,
+  ARGS extends any[] = [],
   RETURN = void,
   CONTEXT = undefined,
 >(
-  definition: RpcFunctionDefinition<NAME, TYPE, ARGS, RETURN, CONTEXT>,
+  definition: RpcFunctionDefinition<NAME, TYPE, CACHECABLE, ARGS, RETURN, CONTEXT>,
   context: CONTEXT,
 ): Promise<(...args: ARGS) => RETURN> {
   if (definition.handler) {
@@ -57,7 +60,7 @@ export class RpcFunctionsCollectorBase<
   LocalFunctions extends Record<string, any>,
   SetupContext,
 > implements RpcFunctionsCollector<LocalFunctions, SetupContext> {
-  public readonly definitions: Map<string, RpcFunctionDefinition<string, any, any, any, SetupContext>> = new Map()
+  public readonly definitions: Map<string, RpcFunctionDefinition<string, any, boolean, any, any, SetupContext>> = new Map()
   public readonly functions: LocalFunctions
   private readonly _onChanged: ((id?: string) => void)[] = []
 
@@ -90,7 +93,7 @@ export class RpcFunctionsCollectorBase<
     }) as LocalFunctions
   }
 
-  register(fn: RpcFunctionDefinition<string, any, any, any, SetupContext>, force = false): void {
+  register(fn: RpcFunctionDefinition<string, any, boolean, any, any, SetupContext>, force = false): void {
     if (this.definitions.has(fn.name) && !force) {
       throw new Error(`RPC function "${fn.name}" is already registered`)
     }
@@ -98,7 +101,7 @@ export class RpcFunctionsCollectorBase<
     this._onChanged.forEach(cb => cb(fn.name))
   }
 
-  update(fn: RpcFunctionDefinition<string, any, any, any, SetupContext>, force = false): void {
+  update(fn: RpcFunctionDefinition<string, any, boolean, any, any, SetupContext>, force = false): void {
     if (!this.definitions.has(fn.name) && !force) {
       throw new Error(`RPC function "${fn.name}" is not registered. Use register() to add new functions.`)
     }
@@ -124,7 +127,7 @@ export class RpcFunctionsCollectorBase<
     return this.definitions.has(name)
   }
 
-  get(name: string): RpcFunctionDefinition<string, any, any, any, SetupContext> | undefined {
+  get(name: string): RpcFunctionDefinition<string, any, boolean, any, any, SetupContext> | undefined {
     return this.definitions.get(name)
   }
 

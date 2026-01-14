@@ -17,6 +17,7 @@ export const defineBobFunction = createDefineWrapperWithContext<BobContext>()
 const getMoney = defineBobFunction({
   name: 'getMoney',
   type: 'static',
+  cacheable: true,
   setup: async (context) => {
     return {
       handler: () => {
