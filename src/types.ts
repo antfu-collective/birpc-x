@@ -71,9 +71,15 @@ export type RpcFunctionDefinition<
       }
 
 export type RpcFunctionDefinitionToFunction<T extends RpcFunctionDefinitionAny>
-  = T extends RpcFunctionDefinition<string, any, infer ARGS, infer RETURN, any, any, any>
-    ? ((...args: ARGS) => RETURN)
-    : never
+  = T extends { argsSchema: infer AS, returnSchema: infer RS }
+    ? AS extends RpcArgsSchema
+      ? RS extends RpcReturnSchema
+        ? (...args: InferArgsType<AS>) => InferReturnType<RS>
+        : never
+      : never
+    : T extends RpcFunctionDefinition<string, any, infer ARGS, infer RETURN, any, any, any>
+      ? (...args: ARGS) => RETURN
+      : never
 
 export type RpcFunctionDefinitionAny = RpcFunctionDefinition<string, any, any, any, any, any, any>
 export type RpcFunctionDefinitionAnyWithContext<CONTEXT = undefined> = RpcFunctionDefinition<string, any, any, any, any, any, CONTEXT>

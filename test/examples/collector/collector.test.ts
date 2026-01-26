@@ -99,7 +99,7 @@ describe('collector', () => {
   it('throws type error when schema mismatch handler type', async () => {
     defineRpcFunction({
       name: 'test',
-      argsSchema: [v.string()] as const,
+      argsSchema: [v.string()],
       returnSchema: v.void(),
       // @ts-expect-error setup handler type mismatch
       setup: () => {
@@ -111,7 +111,7 @@ describe('collector', () => {
 
     defineRpcFunction({
       name: 'test',
-      argsSchema: [v.string()] as const,
+      argsSchema: [v.string()],
       returnSchema: v.void(),
       // @ts-expect-error handler type mismatch
       handler: (_count: number) => { },

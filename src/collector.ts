@@ -5,8 +5,8 @@ export function defineRpcFunction<
   TYPE extends RpcFunctionType,
   ARGS extends any[],
   RETURN = void,
-  AS extends RpcArgsSchema | undefined = undefined,
-  RS extends RpcReturnSchema | undefined = undefined,
+  const AS extends RpcArgsSchema | undefined = undefined,
+  const RS extends RpcReturnSchema | undefined = undefined,
 >(
   definition: RpcFunctionDefinition<NAME, TYPE, ARGS, RETURN, AS, RS>,
 ): RpcFunctionDefinition<NAME, TYPE, ARGS, RETURN, AS, RS> {
@@ -19,8 +19,8 @@ export function createDefineWrapperWithContext<CONTEXT>() {
     TYPE extends RpcFunctionType,
     ARGS extends any[],
     RETURN = void,
-    AS extends RpcArgsSchema | undefined = undefined,
-    RS extends RpcReturnSchema | undefined = undefined,
+    const AS extends RpcArgsSchema | undefined = undefined,
+    const RS extends RpcReturnSchema | undefined = undefined,
   >(
     definition: RpcFunctionDefinition<NAME, TYPE, ARGS, RETURN, AS, RS, CONTEXT>,
   ): RpcFunctionDefinition<NAME, TYPE, ARGS, RETURN, AS, RS, CONTEXT> {
@@ -125,7 +125,9 @@ export class RpcFunctionsCollectorBase<
   }
 
   getSchema<T extends keyof LocalFunctions>(name: T): { argsSchema: RpcArgsSchema | undefined, returnSchema: RpcReturnSchema | undefined } {
-    const definition = this.definitions.get(name as string)!
+    const definition = this.definitions.get(name as string)
+    if (!definition)
+      throw new Error(`RPC function "${String(name)}" is not registered`)
     return {
       argsSchema: definition.argsSchema,
       returnSchema: definition.returnSchema,

@@ -32,7 +32,7 @@ const getBalance = defineAliceFunction({
 const buyApples = defineAliceFunction({
   name: 'buyApples',
   type: 'action',
-  argsSchema: [v.number()] as const,
+  argsSchema: [v.number()],
   returnSchema: v.void(),
   setup: async (context) => {
     return {
