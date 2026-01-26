@@ -11,6 +11,15 @@ Extensible [birpc](https://github.com/antfu-collective/birpc) interfaces.
 > [!IMPORTANT]
 > Experimental. API may change anytime.
 
+## Features
+
+On top of [`birpc`](https://github.com/antfu-collective/birpc), `birpc-x` adds the following features:
+
+- Type-safe function definitions
+- Dynamically registerable functions
+- User-provided function context
+- Schema-validation via [`valibot`](https://valibot.dev)
+
 ## Sponsors
 
 <p align="center">
