@@ -40,7 +40,8 @@
     "prepare": "simple-git-hooks"
   },
   "dependencies": {
-    "birpc": "catalog:prod"
+    "birpc": "catalog:prod",
+    "valibot": "catalog:prod"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:cli",

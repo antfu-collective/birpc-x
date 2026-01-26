@@ -1,5 +1,6 @@
 import type { RpcDefinitionsToFunctions } from '../../../src'
 import type { AliceFunctions } from './shared-types'
+import * as v from 'valibot'
 import { createDefineWrapperWithContext, RpcFunctionsCollectorBase } from '../../../src'
 
 interface AliceContext {
@@ -31,6 +32,8 @@ const getBalance = defineAliceFunction({
 const buyApples = defineAliceFunction({
   name: 'buyApples',
   type: 'action',
+  args: [v.number()],
+  returns: v.void(),
   setup: async (context) => {
     return {
       handler: (count: number) => {

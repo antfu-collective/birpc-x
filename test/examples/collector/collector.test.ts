@@ -1,6 +1,8 @@
 import type { AliceFunctions, BobFunctions } from './shared-types'
 import { createBirpc } from 'birpc'
+import * as v from 'valibot'
 import { describe, expect, it } from 'vitest'
+import { defineRpcFunction } from '../../../src'
 import { aliceCollector } from './alice'
 import { bobCollector } from './bob'
 
@@ -81,5 +83,38 @@ describe('collector', () => {
         .then(handler => handler()),
     )
       .toBe(107)
+  })
+
+  it('get schema', async () => {
+    expect(aliceCollector.getSchema('getAppleCount')).toMatchInlineSnapshot(`
+      {
+        "args": undefined,
+        "returns": undefined,
+      }
+    `)
+
+    expect(aliceCollector.getSchema('buyApples')).toMatchSnapshot()
+  })
+
+  it('throws type error when schema mismatch handler type', async () => {
+    defineRpcFunction({
+      name: 'test',
+      args: [v.string()],
+      returns: v.void(),
+      // @ts-expect-error setup handler type mismatch
+      setup: () => {
+        return {
+          handler: (_count: number) => { },
+        }
+      },
+    })
+
+    defineRpcFunction({
+      name: 'test',
+      args: [v.string()],
+      returns: v.void(),
+      // @ts-expect-error handler type mismatch
+      handler: (_count: number) => { },
+    })
   })
 })
