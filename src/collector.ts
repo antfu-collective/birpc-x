@@ -124,13 +124,13 @@ export class RpcFunctionsCollectorBase<
     return await getRpcHandler(this.definitions.get(name as string)!, this.context) as LocalFunctions[T]
   }
 
-  getSchema<T extends keyof LocalFunctions>(name: T): { argsSchema: RpcArgsSchema | undefined, returnSchema: RpcReturnSchema | undefined } {
+  getSchema<T extends keyof LocalFunctions>(name: T): { args: RpcArgsSchema | undefined, returns: RpcReturnSchema | undefined } {
     const definition = this.definitions.get(name as string)
     if (!definition)
       throw new Error(`RPC function "${String(name)}" is not registered`)
     return {
-      argsSchema: definition.argsSchema,
-      returnSchema: definition.returnSchema,
+      args: definition.args,
+      returns: definition.returns,
     }
   }
 

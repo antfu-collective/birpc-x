@@ -52,8 +52,8 @@ export type RpcFunctionDefinition<
     ? {
         name: NAME
         type?: TYPE
-        argsSchema?: AS
-        returnSchema?: RS
+        args?: AS
+        returns?: RS
         setup?: (context: CONTEXT) => Thenable<RpcFunctionSetupResult<ARGS, RETURN>>
         handler?: (...args: ARGS) => RETURN
         __resolved?: RpcFunctionSetupResult<ARGS, RETURN>
@@ -62,8 +62,8 @@ export type RpcFunctionDefinition<
     : {
         name: NAME
         type?: TYPE
-        argsSchema: AS
-        returnSchema: RS
+        args: AS
+        returns: RS
         setup?: (context: CONTEXT) => Thenable<RpcFunctionSetupResult<InferArgsType<AS>, InferReturnType<RS>>>
         handler?: (...args: InferArgsType<AS>) => InferReturnType<RS>
         __resolved?: RpcFunctionSetupResult<InferArgsType<AS>, InferReturnType<RS>>
@@ -71,7 +71,7 @@ export type RpcFunctionDefinition<
       }
 
 export type RpcFunctionDefinitionToFunction<T extends RpcFunctionDefinitionAny>
-  = T extends { argsSchema: infer AS, returnSchema: infer RS }
+  = T extends { args: infer AS, returns: infer RS }
     ? AS extends RpcArgsSchema
       ? RS extends RpcReturnSchema
         ? (...args: InferArgsType<AS>) => InferReturnType<RS>

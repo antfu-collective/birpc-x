@@ -32,8 +32,8 @@ const getBalance = defineAliceFunction({
 const buyApples = defineAliceFunction({
   name: 'buyApples',
   type: 'action',
-  argsSchema: [v.number()],
-  returnSchema: v.void(),
+  args: [v.number()],
+  returns: v.void(),
   setup: async (context) => {
     return {
       handler: (count: number) => {

@@ -88,8 +88,8 @@ describe('collector', () => {
   it('get schema', async () => {
     expect(aliceCollector.getSchema('getAppleCount')).toMatchInlineSnapshot(`
       {
-        "argsSchema": undefined,
-        "returnSchema": undefined,
+        "args": undefined,
+        "returns": undefined,
       }
     `)
 
@@ -99,8 +99,8 @@ describe('collector', () => {
   it('throws type error when schema mismatch handler type', async () => {
     defineRpcFunction({
       name: 'test',
-      argsSchema: [v.string()],
-      returnSchema: v.void(),
+      args: [v.string()],
+      returns: v.void(),
       // @ts-expect-error setup handler type mismatch
       setup: () => {
         return {
@@ -111,8 +111,8 @@ describe('collector', () => {
 
     defineRpcFunction({
       name: 'test',
-      argsSchema: [v.string()],
-      returnSchema: v.void(),
+      args: [v.string()],
+      returns: v.void(),
       // @ts-expect-error handler type mismatch
       handler: (_count: number) => { },
     })

@@ -2,7 +2,7 @@
 
 exports[`collector > get schema 2`] = `
 {
-  "argsSchema": [
+  "args": [
     {
       "async": false,
       "expects": "number",
@@ -18,7 +18,7 @@ exports[`collector > get schema 2`] = `
       },
     },
   ],
-  "returnSchema": {
+  "returns": {
     "async": false,
     "expects": "void",
     "kind": "schema",

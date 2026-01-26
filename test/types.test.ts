@@ -24,8 +24,8 @@ describe('rpcFunctionDefinitionToFunction', () => {
   it('should infer types from schemas when provided', () => {
     const fn = defineRpcFunction({
       name: 'withSchema',
-      argsSchema: [v.string(), v.number()],
-      returnSchema: v.boolean(),
+      args: [v.string(), v.number()],
+      returns: v.boolean(),
       handler: (a, b) => {
         return a.length > b
       },
@@ -38,8 +38,8 @@ describe('rpcFunctionDefinitionToFunction', () => {
   it('should infer void return from void schema', () => {
     const fn = defineRpcFunction({
       name: 'voidReturn',
-      argsSchema: [v.string()],
-      returnSchema: v.void(),
+      args: [v.string()],
+      returns: v.void(),
       handler: (_a) => {},
     })
 
@@ -50,8 +50,8 @@ describe('rpcFunctionDefinitionToFunction', () => {
   it('should infer empty args from empty schema', () => {
     const fn = defineRpcFunction({
       name: 'noArgs',
-      argsSchema: [],
-      returnSchema: v.number(),
+      args: [],
+      returns: v.number(),
       handler: () => 42,
     })
 
@@ -62,8 +62,8 @@ describe('rpcFunctionDefinitionToFunction', () => {
   it('should work with setup function instead of handler', () => {
     const fn = defineRpcFunction({
       name: 'withSetup',
-      argsSchema: [v.object({ id: v.string() })],
-      returnSchema: v.array(v.string()),
+      args: [v.object({ id: v.string() })],
+      returns: v.array(v.string()),
       setup: () => ({
         handler: (input) => {
           return [input.id]
@@ -80,8 +80,8 @@ describe('rpcDefinitionsToFunctions', () => {
   it('should map definitions to functions correctly', () => {
     const fn1 = defineRpcFunction({
       name: 'getUser',
-      argsSchema: [v.string()],
-      returnSchema: v.object({ name: v.string() }),
+      args: [v.string()],
+      returns: v.object({ name: v.string() }),
       handler: id => ({ name: `User ${id}` }),
     })
 
@@ -105,8 +105,8 @@ describe('rpcDefinitionsToFunctions', () => {
   it('should handle mixed definitions with and without schemas', () => {
     const withSchema = defineRpcFunction({
       name: 'withSchema',
-      argsSchema: [v.boolean()],
-      returnSchema: v.string(),
+      args: [v.boolean()],
+      returns: v.string(),
       handler: flag => (flag ? 'yes' : 'no'),
     })
 
