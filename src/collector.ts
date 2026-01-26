@@ -3,7 +3,7 @@ import type { RpcArgsSchema, RpcFunctionDefinition, RpcFunctionsCollector, RpcFu
 export function defineRpcFunction<
   NAME extends string,
   TYPE extends RpcFunctionType,
-  ARGS extends any[] = [],
+  ARGS extends any[],
   RETURN = void,
   const AS extends RpcArgsSchema | undefined = undefined,
   const RS extends RpcReturnSchema | undefined = undefined,
@@ -17,7 +17,7 @@ export function createDefineWrapperWithContext<CONTEXT>() {
   return function defineRpcFunctionWithContext<
     NAME extends string,
     TYPE extends RpcFunctionType,
-    ARGS extends any[] = [],
+    ARGS extends any[],
     RETURN = void,
     const AS extends RpcArgsSchema | undefined = undefined,
     const RS extends RpcReturnSchema | undefined = undefined,
@@ -31,7 +31,7 @@ export function createDefineWrapperWithContext<CONTEXT>() {
 export async function getRpcHandler<
   NAME extends string,
   TYPE extends RpcFunctionType,
-  ARGS extends any[] = [],
+  ARGS extends any[],
   RETURN = void,
   CONTEXT = undefined,
 >(
