@@ -1,3 +1,6 @@
+import type { GenericSchema } from 'valibot'
+import type { InferArgsType, InferReturnType } from './utils'
+
 export type { BirpcFn, BirpcReturn } from 'birpc'
 
 export type Thenable<T> = T | Promise<T>
@@ -33,32 +36,55 @@ export interface RpcFunctionSetupResult<
   handler: (...args: ARGS) => RETURN
 }
 
-// TODO: maybe we should introduce schema system with valibot
+export type RpcArgsSchema = readonly GenericSchema[]
+export type RpcReturnSchema = GenericSchema
 
-export interface RpcFunctionDefinition<
+export type RpcFunctionDefinition<
   NAME extends string,
   TYPE extends RpcFunctionType = 'query',
-  CACHECABLE extends boolean = false,
   ARGS extends any[] = [],
   RETURN = void,
+  AS extends RpcArgsSchema | undefined = undefined,
+  RS extends RpcReturnSchema | undefined = undefined,
   CONTEXT = undefined,
-> {
-  name: NAME
-  type?: TYPE
-  cacheable?: CACHECABLE
-  setup?: (context: CONTEXT) => Thenable<RpcFunctionSetupResult<ARGS, RETURN>>
-  handler?: (...args: ARGS) => RETURN
-  __resolved?: RpcFunctionSetupResult<ARGS, RETURN>
-  __promise?: Thenable<RpcFunctionSetupResult<ARGS, RETURN>>
-}
+>
+  = [AS, RS] extends [undefined, undefined]
+    ? {
+        name: NAME
+        type?: TYPE
+        cacheable?: boolean
+        args?: AS
+        returns?: RS
+        setup?: (context: CONTEXT) => Thenable<RpcFunctionSetupResult<ARGS, RETURN>>
+        handler?: (...args: ARGS) => RETURN
+        __resolved?: RpcFunctionSetupResult<ARGS, RETURN>
+        __promise?: Thenable<RpcFunctionSetupResult<ARGS, RETURN>>
+      }
+    : {
+        name: NAME
+        type?: TYPE
+        cacheable?: boolean
+        args: AS
+        returns: RS
+        setup?: (context: CONTEXT) => Thenable<RpcFunctionSetupResult<InferArgsType<AS>, InferReturnType<RS>>>
+        handler?: (...args: InferArgsType<AS>) => InferReturnType<RS>
+        __resolved?: RpcFunctionSetupResult<InferArgsType<AS>, InferReturnType<RS>>
+        __promise?: Thenable<RpcFunctionSetupResult<InferArgsType<AS>, InferReturnType<RS>>>
+      }
 
 export type RpcFunctionDefinitionToFunction<T extends RpcFunctionDefinitionAny>
-  = T extends RpcFunctionDefinition<string, any, boolean, infer ARGS, infer RETURN, any>
-    ? ((...args: ARGS) => RETURN)
-    : never
+  = T extends { args: infer AS, returns: infer RS }
+    ? AS extends RpcArgsSchema
+      ? RS extends RpcReturnSchema
+        ? (...args: InferArgsType<AS>) => InferReturnType<RS>
+        : never
+      : never
+    : T extends RpcFunctionDefinition<string, any, infer ARGS, infer RETURN, any, any, any>
+      ? (...args: ARGS) => RETURN
+      : never
 
-export type RpcFunctionDefinitionAny = RpcFunctionDefinition<string, any, boolean, any, any, any>
-export type RpcFunctionDefinitionAnyWithContext<CONTEXT = undefined> = RpcFunctionDefinition<string, any, boolean, any, any, CONTEXT>
+export type RpcFunctionDefinitionAny = RpcFunctionDefinition<string, any, any, any, any, any, any>
+export type RpcFunctionDefinitionAnyWithContext<CONTEXT = undefined> = RpcFunctionDefinition<string, any, any, any, any, any, CONTEXT>
 
 export type RpcDefinitionsToFunctions<T extends readonly RpcFunctionDefinitionAny[]> = EntriesToObject<{
   [K in keyof T]: [T[K]['name'], RpcFunctionDefinitionToFunction<T[K]>]

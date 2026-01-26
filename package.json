@@ -1,7 +1,7 @@
 {
   "name": "birpc-x",
   "type": "module",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "packageManager": "pnpm@10.25.0",
   "description": "Extensible birpc interfaces",
   "author": "Anthony Fu <anthonyfu117@hotmail.com>",
@@ -40,7 +40,8 @@
     "prepare": "simple-git-hooks"
   },
   "dependencies": {
-    "birpc": "catalog:prod"
+    "birpc": "catalog:prod",
+    "valibot": "catalog:prod"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:cli",
