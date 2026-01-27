@@ -44,6 +44,9 @@ catalogs:
     birpc:
       specifier: ^4.0.0
       version: 4.0.0
+    ohash:
+      specifier: ^2.0.11
+      version: 2.0.11
     valibot:
       specifier: ^1.2.0
       version: 1.2.0
@@ -72,6 +75,9 @@ importers:
       birpc:
         specifier: catalog:prod
         version: 4.0.0
+      ohash:
+        specifier: catalog:prod
+        version: 2.0.11
       valibot:
         specifier: catalog:prod
         version: 1.2.0(typescript@5.9.3)

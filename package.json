@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "birpc": "catalog:prod",
+    "ohash": "catalog:prod",
     "valibot": "catalog:prod"
   },
   "devDependencies": {

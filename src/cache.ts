@@ -1,13 +1,18 @@
+import { hash } from 'ohash'
+
 export interface RpcCacheOptions {
   functions: string[]
+  keySerializer?: (args: unknown[]) => string
 }
 
 export class RpcCacheManager {
   private cacheMap = new Map<string, Map<string, unknown>>()
   private options: RpcCacheOptions
+  private keySerializer: (args: unknown[]) => string
 
   constructor(options: RpcCacheOptions) {
     this.options = options
+    this.keySerializer = options.keySerializer || ((args: unknown[]) => hash(args))
   }
 
   updateOptions(options: Partial<RpcCacheOptions>): void {
@@ -20,14 +25,14 @@ export class RpcCacheManager {
   cached<T>(m: string, a: unknown[]): T | undefined {
     const methodCache = this.cacheMap.get(m)
     if (methodCache) {
-      return methodCache.get(JSON.stringify(a)) as T
+      return methodCache.get(this.keySerializer(a)) as T
     }
     return undefined
   }
 
   apply(req: { m: string, a: unknown[] }, res: unknown): void {
     const methodCache = this.cacheMap.get(req.m) || new Map<string, unknown>()
-    methodCache.set(JSON.stringify(req.a), res)
+    methodCache.set(this.keySerializer(req.a), res)
     this.cacheMap.set(req.m, methodCache)
   }
 
@@ -35,9 +40,9 @@ export class RpcCacheManager {
     return this.options.functions.includes(m)
   }
 
-  invalidate(key?: string): void {
-    if (key) {
-      this.cacheMap.delete(key)
+  clear(fn?: string): void {
+    if (fn) {
+      this.cacheMap.delete(fn)
     }
     else {
       this.cacheMap.clear()

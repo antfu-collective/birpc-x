@@ -25,6 +25,7 @@ catalogs:
     '@antfu/utils': ^9.3.0
   prod:
     birpc: ^4.0.0
+    ohash: ^2.0.11
     valibot: ^1.2.0
   testing:
     tinyexec: ^1.0.2
