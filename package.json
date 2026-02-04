@@ -1,7 +1,7 @@
 {
   "name": "birpc-x",
   "type": "module",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "packageManager": "pnpm@10.28.2",
   "description": "Extensible birpc interfaces",
   "author": "Anthony Fu <anthonyfu117@hotmail.com>",
