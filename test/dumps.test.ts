@@ -331,29 +331,6 @@ describe('dumps', () => {
     expect(userDefinition.type).toBe('query')
   })
 
-  it('should call onProgress callback during collection', async () => {
-    const add = defineRpcFunction({
-      name: 'add',
-      dump: {
-        inputs: [[1, 2], [3, 4], [5, 6]],
-      },
-      handler: (a: number, b: number) => a + b,
-    })
-
-    const progress: Array<{ completed: number, total: number, functionName: string }> = []
-
-    await dumpFunctions([add], undefined, {
-      onProgress: (completed, total, functionName) => {
-        progress.push({ completed, total, functionName })
-      },
-    })
-
-    expect(progress).toHaveLength(3)
-    expect(progress[0]).toEqual({ completed: 1, total: 3, functionName: 'add' })
-    expect(progress[1]).toEqual({ completed: 2, total: 3, functionName: 'add' })
-    expect(progress[2]).toEqual({ completed: 3, total: 3, functionName: 'add' })
-  })
-
   it('should support dump as a getter function', async () => {
     const defineWithContext = createDefineWrapperWithContext<{ multiplier: number, values: number[] }>()
 
@@ -434,6 +411,164 @@ describe('dumps', () => {
 
     const store = await dumpFunctions([add, greet])
     expect(store).toMatchSnapshot()
+  })
+
+  describe('dump snapshots', () => {
+    it('should snapshot dump with errors', async () => {
+      const divide = defineRpcFunction({
+        name: 'divide',
+        dump: {
+          inputs: [[10, 2], [10, 0], [20, 4]],
+        },
+        handler: (a: number, b: number) => {
+          if (b === 0)
+            throw new Error('Division by zero')
+          return a / b
+        },
+      })
+
+      const store = await dumpFunctions([divide])
+      expect(store).toMatchSnapshot()
+    })
+
+    it('should snapshot dump with pre-computed records', async () => {
+      const multiply = defineRpcFunction({
+        name: 'multiply',
+        handler: (a: number, b: number) => a * b,
+        dump: {
+          records: [
+            { inputs: [2, 3], output: 6 },
+            { inputs: [4, 5], output: 20 },
+            { inputs: [10, 0], output: 0 },
+          ],
+        },
+      })
+
+      const store = await dumpFunctions([multiply])
+      expect(store).toMatchSnapshot()
+    })
+
+    it('should snapshot dump with mixed inputs and records', async () => {
+      const add = defineRpcFunction({
+        name: 'add',
+        handler: (a: number, b: number) => a + b,
+        dump: {
+          inputs: [[1, 2], [3, 4]],
+          records: [
+            { inputs: [10, 20], output: 30 },
+            { inputs: [100, 200], output: 300 },
+          ],
+        },
+      })
+
+      const store = await dumpFunctions([add])
+      expect(store).toMatchSnapshot()
+    })
+
+    it('should snapshot dump with context-dependent functions', async () => {
+      const defineWithContext = createDefineWrapperWithContext<{ env: 'dev' | 'prod' }>()
+
+      const getConfig = defineWithContext({
+        name: 'getConfig',
+        setup: (context) => {
+          return {
+            handler: (_key: string) => {
+              const configs = {
+                dev: { apiUrl: 'http://localhost:3000', debug: true },
+                prod: { apiUrl: 'https://api.example.com', debug: false },
+              }
+              return configs[context.env]
+            },
+            dump: {
+              inputs: [['apiUrl']] as [string][],
+            },
+          }
+        },
+      })
+
+      const store = await dumpFunctions([getConfig], { env: 'dev' })
+      expect(store).toMatchSnapshot()
+    })
+
+    it('should snapshot dump with fallback values', async () => {
+      const greet = defineRpcFunction({
+        name: 'greet',
+        dump: {
+          inputs: [['Alice'], ['Bob']],
+          fallback: 'Hello, stranger!',
+        },
+        handler: (name: string) => `Hello, ${name}!`,
+      })
+
+      const store = await dumpFunctions([greet])
+      expect(store).toMatchSnapshot()
+    })
+
+    it('should snapshot dump with static functions', async () => {
+      const getVersion = defineRpcFunction({
+        name: 'getVersion',
+        type: 'static',
+        handler: () => '1.0.0',
+      })
+
+      const getConfig = defineRpcFunction({
+        name: 'getConfig',
+        type: 'static',
+        handler: () => ({
+          apiUrl: 'https://api.example.com',
+          version: 'v1',
+          features: ['auth', 'cache'],
+        }),
+      })
+
+      const store = await dumpFunctions([getVersion, getConfig])
+      expect(store).toMatchSnapshot()
+    })
+
+    it('should snapshot comprehensive dump with multiple scenarios', async () => {
+      const divide = defineRpcFunction({
+        name: 'divide',
+        dump: {
+          inputs: [[10, 2], [10, 0]],
+        },
+        handler: (a: number, b: number) => {
+          if (b === 0)
+            throw new Error('Division by zero')
+          return a / b
+        },
+      })
+
+      const multiply = defineRpcFunction({
+        name: 'multiply',
+        handler: (a: number, b: number) => a * b,
+        dump: {
+          records: [
+            { inputs: [2, 3], output: 6 },
+          ],
+        },
+      })
+
+      const add = defineRpcFunction({
+        name: 'add',
+        handler: (a: number, b: number) => a + b,
+        dump: {
+          inputs: [[1, 2]],
+          records: [
+            { inputs: [10, 20], output: 30 },
+          ],
+          fallback: 0,
+        },
+      })
+
+      const getConfig = defineRpcFunction({
+        name: 'getConfig',
+        type: 'static',
+        handler: () => ({ version: '1.0.0' }),
+      })
+
+      const store = await dumpFunctions([divide, multiply, add, getConfig])
+      expect(store).toMatchSnapshot()
+    })
   })
 
   it('should throw error if action type function has dump', async () => {
@@ -678,33 +813,6 @@ describe('dumps', () => {
     // Parallel execution should be faster than sequential (roughly)
     // 5 operations * 10ms = 50ms sequential, but parallel should be ~10-20ms
     expect(parallelTime).toBeLessThan(40)
-  })
-
-  it('should call onProgress correctly in parallel mode', async () => {
-    const progressCalls: Array<{ completed: number, total: number, name: string }> = []
-
-    const add = defineRpcFunction({
-      name: 'add',
-      handler: (a: number, b: number) => a + b,
-      dump: {
-        inputs: [[1, 2], [3, 4], [5, 6]],
-      },
-    })
-
-    await dumpFunctions([add], undefined, {
-      concurrency: true,
-      onProgress: (completed, total, name) => {
-        progressCalls.push({ completed, total, name })
-      },
-    })
-
-    expect(progressCalls.length).toBe(3)
-    expect(progressCalls.every(call => call.total === 3)).toBe(true)
-    expect(progressCalls.every(call => call.name === 'add')).toBe(true)
-    // In parallel mode, completed count might not be sequential due to race conditions
-    // but all should eventually complete
-    const completedCounts = progressCalls.map(c => c.completed).sort()
-    expect(completedCounts).toContain(3)
   })
 
   it('should respect concurrency limit', async () => {

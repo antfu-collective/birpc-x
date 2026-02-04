@@ -20,12 +20,21 @@ export type EntriesToObject<T extends readonly [string, any][]> = {
  */
 export type RpcFunctionType = 'static' | 'action' | 'event' | 'query'
 
+/**
+ * Manages dynamic function registration and provides a type-safe proxy for accessing functions.
+ */
 export interface RpcFunctionsCollector<LocalFunctions, SetupContext = undefined> {
+  /** User-provided context passed to setup functions */
   context: SetupContext
+  /** Type-safe proxy for calling registered functions */
   readonly functions: LocalFunctions
+  /** Map of registered function definitions keyed by function name */
   readonly definitions: Map<string, RpcFunctionDefinitionAnyWithContext<SetupContext>>
+  /** Register a new function definition */
   register: (fn: RpcFunctionDefinitionAnyWithContext<SetupContext>) => void
+  /** Update an existing function definition */
   update: (fn: RpcFunctionDefinitionAnyWithContext<SetupContext>) => void
+  /** Subscribe to function changes, returns unsubscribe function */
   onChanged: (fn: (id?: string) => void) => (() => void)
 }
 
@@ -42,7 +51,9 @@ export interface RpcFunctionSetupResult<
   dump?: RpcDumpDefinition<ARGS, RETURN>
 }
 
+/** Valibot schema array for validating function arguments */
 export type RpcArgsSchema = readonly GenericSchema[]
+/** Valibot schema for validating function return value */
 export type RpcReturnSchema = GenericSchema
 
 /**
@@ -55,9 +66,10 @@ export interface RpcDumpRecord<ARGS extends any[] = any[], RETURN = any> {
   output?: RETURN
   /** Error if execution failed */
   error?: {
+    /** Error message */
     message: string
+    /** Error type name (e.g., "Error", "TypeError") */
     name: string
-    stack?: string
   }
 }
 
@@ -90,7 +102,9 @@ export type RpcDump<ARGS extends any[] = any[], RETURN = any, CONTEXT = any>
  * Base function definition metadata.
  */
 export interface RpcFunctionDefinitionBase {
+  /** Function name (unique identifier) */
   name: string
+  /** Function type (static, action, event, or query) */
   type?: RpcFunctionType
 }
 
@@ -126,8 +140,6 @@ export interface RpcDumpCollectionOptions {
    * - `number`: parallel execution with specified concurrency limit
    */
   concurrency?: boolean | number | null
-  /** Callback invoked after each input is processed */
-  onProgress?: (completed: number, total: number, functionName: string) => void
 }
 
 /**
@@ -144,31 +156,39 @@ export type RpcFunctionDefinition<
 >
   = [AS, RS] extends [undefined, undefined]
     ? {
+        /** Function name (unique identifier) */
         name: NAME
+        /** Function type (static, action, event, or query) */
         type?: TYPE
+        /** Valibot schema array for validating function arguments */
         args?: AS
+        /** Valibot schema for validating function return value */
         returns?: RS
+        /** Setup function called with context to initialize handler and dump */
         setup?: (context: CONTEXT) => Thenable<RpcFunctionSetupResult<ARGS, RETURN>>
+        /** Function implementation (required if setup doesn't provide one) */
         handler?: (...args: ARGS) => RETURN
         /** Dump definition (setup dump takes priority) */
         dump?: RpcDump<ARGS, RETURN, CONTEXT>
-        /** @internal */
         __resolved?: RpcFunctionSetupResult<ARGS, RETURN>
-        /** @internal */
         __promise?: Thenable<RpcFunctionSetupResult<ARGS, RETURN>>
       }
     : {
+        /** Function name (unique identifier) */
         name: NAME
+        /** Function type (static, action, event, or query) */
         type?: TYPE
+        /** Valibot schema array for validating function arguments */
         args: AS
+        /** Valibot schema for validating function return value */
         returns: RS
+        /** Setup function called with context to initialize handler and dump */
         setup?: (context: CONTEXT) => Thenable<RpcFunctionSetupResult<InferArgsType<AS>, InferReturnType<RS>>>
+        /** Function implementation (required if setup doesn't provide one) */
         handler?: (...args: InferArgsType<AS>) => InferReturnType<RS>
         /** Dump definition (setup dump takes priority) */
         dump?: RpcDump<InferArgsType<AS>, InferReturnType<RS>, CONTEXT>
-        /** @internal */
         __resolved?: RpcFunctionSetupResult<InferArgsType<AS>, InferReturnType<RS>>
-        /** @internal */
         __promise?: Thenable<RpcFunctionSetupResult<InferArgsType<AS>, InferReturnType<RS>>>
       }
 

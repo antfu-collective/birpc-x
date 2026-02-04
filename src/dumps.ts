@@ -11,6 +11,21 @@ import { hash } from 'ohash'
 import pLimit from 'p-limit'
 import { validateDefinitions } from './validation'
 
+function getDumpRecordKey(functionName: string, args: any[]): string {
+  const argsHash = hash(args)
+  return `${functionName}---${argsHash}`
+}
+
+function getDumpFallbackKey(functionName: string): string {
+  return `${functionName}---fallback`
+}
+
+async function resolveGetter<T>(valueOrGetter: T | (() => Promise<T>)): Promise<T> {
+  return typeof valueOrGetter === 'function'
+    ? await (valueOrGetter as () => Promise<T>)()
+    : valueOrGetter
+}
+
 /**
  * Collects pre-computed dumps by executing functions with their defined input combinations.
  * Static functions without dump config automatically get `{ inputs: [[]] }`.
@@ -106,24 +121,19 @@ export async function dumpFunctions<
   const dumpTasks: Array<() => Promise<void>> = []
   for (const { definition, handler, dump } of functionsToDump) {
     const { inputs, records, fallback } = dump
-    let recordCount = 0
-    const totalCount = (inputs?.length || 0) + (records?.length || 0)
 
     // Add pre-defined records
     if (records) {
       for (const record of records) {
-        const argsHash = hash(record.inputs)
-        const recordKey = `${definition.name}---${argsHash}`
+        const recordKey = getDumpRecordKey(definition.name, record.inputs)
         store.records[recordKey] = record
-
-        recordCount++
-        options?.onProgress?.(recordCount, totalCount, definition.name)
       }
     }
 
     // Add fallback record
     if ('fallback' in dump) {
-      store.records[`${definition.name}---fallback`] = {
+      const fallbackKey = getDumpFallbackKey(definition.name)
+      store.records[fallbackKey] = {
         inputs: [],
         output: fallback,
       }
@@ -133,8 +143,7 @@ export async function dumpFunctions<
     if (inputs) {
       for (const input of inputs) {
         dumpTasks.push(async () => {
-          const argsHash = hash(input)
-          const recordKey = `${definition.name}---${argsHash}`
+          const recordKey = getDumpRecordKey(definition.name, input)
 
           try {
             const output = await Promise.resolve(handler(...input))
@@ -149,13 +158,9 @@ export async function dumpFunctions<
               error: {
                 message: error.message,
                 name: error.name,
-                stack: error.stack,
               },
             }
           }
-
-          recordCount++
-          options?.onProgress?.(recordCount, totalCount, definition.name)
         })
       }
     }
@@ -198,22 +203,16 @@ export function createClientFromDump<T extends Record<string, any>>(
       }
 
       return async (...args: any[]) => {
-        const argsHash = hash(args)
-        const recordKey = `${functionName}---${argsHash}`
+        const recordKey = getDumpRecordKey(functionName, args)
 
         const recordOrGetter = store.records[recordKey]
 
         if (recordOrGetter) {
-          const record = typeof recordOrGetter === 'function'
-            ? await recordOrGetter()
-            : recordOrGetter
+          const record = await resolveGetter(recordOrGetter)
 
           if (record.error) {
             const error = new Error(record.error.message)
             error.name = record.error.name
-            if (record.error.stack) {
-              error.stack = record.error.stack
-            }
             throw error
           }
 
@@ -226,13 +225,11 @@ export function createClientFromDump<T extends Record<string, any>>(
 
         onMiss?.(functionName, args)
 
-        const fallbackKey = `${functionName}---fallback`
+        const fallbackKey = getDumpFallbackKey(functionName)
         if (fallbackKey in store.records) {
           const fallbackOrGetter = store.records[fallbackKey]
 
-          const fallbackRecord = typeof fallbackOrGetter === 'function'
-            ? await fallbackOrGetter()
-            : fallbackOrGetter
+          const fallbackRecord = await resolveGetter(fallbackOrGetter)
 
           if (typeof fallbackRecord.output === 'function') {
             return await fallbackRecord.output()
