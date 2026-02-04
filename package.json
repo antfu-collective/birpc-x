@@ -2,7 +2,7 @@
   "name": "birpc-x",
   "type": "module",
   "version": "0.0.8",
-  "packageManager": "pnpm@10.25.0",
+  "packageManager": "pnpm@10.28.2",
   "description": "Extensible birpc interfaces",
   "author": "Anthony Fu <anthonyfu117@hotmail.com>",
   "license": "MIT",
@@ -41,6 +41,8 @@
   },
   "dependencies": {
     "birpc": "catalog:prod",
+    "ohash": "catalog:prod",
+    "structured-clone-es": "catalog:prod",
     "valibot": "catalog:prod"
   },
   "devDependencies": {
@@ -48,6 +50,7 @@
     "@antfu/ni": "catalog:cli",
     "@antfu/utils": "catalog:inlined",
     "@types/node": "catalog:types",
+    "baseline-browser-mapping": "catalog:cli",
     "bumpp": "catalog:cli",
     "eslint": "catalog:cli",
     "lint-staged": "catalog:cli",

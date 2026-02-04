@@ -1,5 +1,10 @@
 .:
+  createClientFromDump: function
   createDefineWrapperWithContext: function
   defineRpcFunction: function
+  dumpFunctions: function
+  getDefinitionsWithDumps: function
   getRpcHandler: function
   RpcFunctionsCollectorBase: function
+  validateDefinition: function
+  validateDefinitions: function

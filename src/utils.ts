@@ -1,10 +1,6 @@
 import type { GenericSchema, InferInput } from 'valibot'
 import type { RpcArgsSchema, RpcReturnSchema } from './types'
 
-export type Equal<X, Y>
-  = (<T>() => T extends X ? 1 : 2) extends
-  (<T>() => T extends Y ? 1 : 2) ? true : false
-
 export type AssertEqual<X, Y>
   = (<T>() => T extends X ? 1 : 2) extends
   (<T>() => T extends Y ? 1 : 2) ? true : never

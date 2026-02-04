@@ -1,0 +1,48 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`dumps > should snapshot the store structure 1`] = `
+{
+  "definitions": {
+    "add": {
+      "name": "add",
+      "type": undefined,
+    },
+    "greet": {
+      "name": "greet",
+      "type": undefined,
+    },
+  },
+  "records": {
+    "add---SaZHF9XUyxmVLm6sKUZBXPaHmtrPmQjn2HIzLTLG5oQ": {
+      "inputs": [
+        1,
+        2,
+      ],
+      "output": 3,
+    },
+    "add---fallback": {
+      "inputs": [],
+      "output": 0,
+    },
+    "add---i-bWbpCZxo2P61LOQkeNIVPKwnY7eEF0rmrpbNY2tZY": {
+      "inputs": [
+        3,
+        4,
+      ],
+      "output": 7,
+    },
+    "greet---_O8fg6KUjOBNeL20buGWXHbcFzcF4DNQsu_J9Yd8esk": {
+      "inputs": [
+        "Bob",
+      ],
+      "output": "Hello, Bob!",
+    },
+    "greet---acIfQW5j2P6VtOYcCUwCi1SNi7Phz7_1JeqXfb4eb3s": {
+      "inputs": [
+        "Alice",
+      ],
+      "output": "Hello, Alice!",
+    },
+  },
+}
+`;
