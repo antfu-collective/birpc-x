@@ -138,6 +138,48 @@ await client.greet('Alice') // Returns pre-computed: "Hello, Alice!"
 await client.greet('Unknown') // Returns fallback: "Hello, stranger!"
 ```
 
+Functions with `type: 'static'` automatically get dumped with empty arguments if no dump configuration is provided.
+
+#### Pre-computed Records
+
+You can provide pre-computed records directly to bypass function execution:
+
+```ts
+const multiply = defineRpcFunction({
+  name: 'multiply',
+  handler: (a: number, b: number) => a * b,
+  dump: {
+    records: [
+      { inputs: [2, 3], output: 6 },
+      { inputs: [4, 5], output: 20 },
+    ],
+  },
+})
+```
+
+You can also mix computed (`inputs`) and pre-computed (`records`) in the same dump configuration.
+
+#### Parallel Execution
+
+Enable parallel processing for faster dump collection:
+
+```ts
+// Enable parallel with default concurrency of 5
+const store = await dumpFunctions([greet], context, {
+  concurrency: true
+})
+
+// Or specify a custom concurrency limit
+const store = await dumpFunctions([greet], context, {
+  concurrency: 10, // Limit to 10 concurrent executions
+  onProgress: (completed, total, name) => {
+    console.log(`${name}: ${completed}/${total}`)
+  }
+})
+```
+
+Set `concurrency` to `true` for parallel execution (default limit: 5) or a number to specify the exact concurrency limit.
+
 ## Examples
 
 See [test](./test) directory for complete integration examples.

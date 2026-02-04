@@ -37,7 +37,7 @@ export interface RpcFunctionSetupResult<
   RETURN = void,
 > {
   /** Function handler */
-  handler: (...args: ARGS) => RETURN
+  handler?: (...args: ARGS) => RETURN
   /** Optional dump definition (overrides definition-level dump) */
   dump?: RpcDumpDefinition<ARGS, RETURN>
 }
@@ -65,8 +65,10 @@ export interface RpcDumpRecord<ARGS extends any[] = any[], RETURN = any> {
  * Defines argument combinations to pre-compute for a function.
  */
 export interface RpcDumpDefinition<ARGS extends any[] = any[], RETURN = any> {
-  /** Argument combinations to pre-compute */
-  inputs: ARGS[]
+  /** Argument combinations to pre-compute by executing handler */
+  inputs?: ARGS[]
+  /** Pre-computed records to use directly (bypasses handler execution) */
+  records?: RpcDumpRecord<ARGS, RETURN>[]
   /** Fallback value when no match found */
   fallback?: RETURN
 }
@@ -111,6 +113,21 @@ export interface RpcDumpStore<T = any> {
 export interface RpcDumpClientOptions {
   /** Called when arguments don't match any pre-computed entry */
   onMiss?: (functionName: string, args: any[]) => void
+}
+
+/**
+ * Options for collecting dumps.
+ */
+export interface RpcDumpCollectionOptions {
+  /**
+   * Concurrency control for parallel execution.
+   * - `false` or `undefined`: sequential execution (default)
+   * - `true`: parallel execution with concurrency limit of 5
+   * - `number`: parallel execution with specified concurrency limit
+   */
+  concurrency?: boolean | number | null
+  /** Callback invoked after each input is processed */
+  onProgress?: (completed: number, total: number, functionName: string) => void
 }
 
 /**

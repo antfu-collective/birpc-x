@@ -564,4 +564,173 @@ describe('dumps', () => {
     expect(configRecords.some(r => r.inputs[0] === 'dev')).toBe(true)
     expect(configRecords.some(r => r.inputs[0] === 'prod')).toBe(true)
   })
+
+  it('should support pre-computed records in dump', async () => {
+    const multiply = defineRpcFunction({
+      name: 'multiply',
+      handler: (a: number, b: number) => a * b,
+      dump: {
+        records: [
+          { inputs: [2, 3], output: 6 },
+          { inputs: [4, 5], output: 20 },
+          { inputs: [10, 0], output: 0 },
+        ],
+      },
+    })
+
+    const store = await dumpFunctions([multiply])
+
+    const multiplyRecords = Object.entries(store.records)
+      .filter(([key]) => key.startsWith('multiply---') && !key.endsWith('---fallback'))
+      .map(([, record]) => record as RpcDumpRecord)
+
+    expect(multiplyRecords.length).toBe(3)
+    expect(multiplyRecords[0]).toMatchObject({ inputs: [2, 3], output: 6 })
+    expect(multiplyRecords[1]).toMatchObject({ inputs: [4, 5], output: 20 })
+    expect(multiplyRecords[2]).toMatchObject({ inputs: [10, 0], output: 0 })
+
+    // Verify client works with pre-computed records
+    const client = createClientFromDump(store)
+    await expect(client.multiply(2, 3)).resolves.toBe(6)
+    await expect(client.multiply(4, 5)).resolves.toBe(20)
+    await expect(client.multiply(10, 0)).resolves.toBe(0)
+  })
+
+  it('should support mixing inputs and records', async () => {
+    const add = defineRpcFunction({
+      name: 'add',
+      handler: (a: number, b: number) => a + b,
+      dump: {
+        inputs: [[1, 2], [3, 4]],
+        records: [
+          { inputs: [10, 20], output: 30 },
+        ],
+      },
+    })
+
+    const store = await dumpFunctions([add])
+
+    const addRecords = Object.entries(store.records)
+      .filter(([key]) => key.startsWith('add---') && !key.endsWith('---fallback'))
+      .map(([, record]) => record as RpcDumpRecord)
+
+    expect(addRecords.length).toBe(3)
+
+    const client = createClientFromDump(store)
+    await expect(client.add(1, 2)).resolves.toBe(3)
+    await expect(client.add(3, 4)).resolves.toBe(7)
+    await expect(client.add(10, 20)).resolves.toBe(30)
+  })
+
+  it('should support error records', async () => {
+    const divide = defineRpcFunction({
+      name: 'divide',
+      handler: (a: number, b: number) => a / b,
+      dump: {
+        records: [
+          { inputs: [10, 2], output: 5 },
+          {
+            inputs: [10, 0],
+            error: {
+              message: 'Cannot divide by zero',
+              name: 'Error',
+            },
+          },
+        ],
+      },
+    })
+
+    const store = await dumpFunctions([divide])
+    const client = createClientFromDump(store)
+
+    await expect(client.divide(10, 2)).resolves.toBe(5)
+    await expect(client.divide(10, 0)).rejects.toThrow('Cannot divide by zero')
+  })
+
+  it('should support parallel execution', async () => {
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+    const slowAdd = defineRpcFunction({
+      name: 'slowAdd',
+      handler: async (a: number, b: number) => {
+        await delay(10)
+        return a + b
+      },
+      dump: {
+        inputs: [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]],
+      },
+    })
+
+    const startTime = Date.now()
+    const store = await dumpFunctions([slowAdd], undefined, { concurrency: true })
+    const parallelTime = Date.now() - startTime
+
+    // Verify all results are correct
+    const records = Object.entries(store.records)
+      .filter(([key]) => key.startsWith('slowAdd---'))
+      .map(([, record]) => record as RpcDumpRecord)
+
+    expect(records.length).toBe(5)
+    expect(records[0]).toMatchObject({ inputs: [1, 2], output: 3 })
+    expect(records[1]).toMatchObject({ inputs: [3, 4], output: 7 })
+    expect(records[2]).toMatchObject({ inputs: [5, 6], output: 11 })
+
+    // Parallel execution should be faster than sequential (roughly)
+    // 5 operations * 10ms = 50ms sequential, but parallel should be ~10-20ms
+    expect(parallelTime).toBeLessThan(40)
+  })
+
+  it('should call onProgress correctly in parallel mode', async () => {
+    const progressCalls: Array<{ completed: number, total: number, name: string }> = []
+
+    const add = defineRpcFunction({
+      name: 'add',
+      handler: (a: number, b: number) => a + b,
+      dump: {
+        inputs: [[1, 2], [3, 4], [5, 6]],
+      },
+    })
+
+    await dumpFunctions([add], undefined, {
+      concurrency: true,
+      onProgress: (completed, total, name) => {
+        progressCalls.push({ completed, total, name })
+      },
+    })
+
+    expect(progressCalls.length).toBe(3)
+    expect(progressCalls.every(call => call.total === 3)).toBe(true)
+    expect(progressCalls.every(call => call.name === 'add')).toBe(true)
+    // In parallel mode, completed count might not be sequential due to race conditions
+    // but all should eventually complete
+    const completedCounts = progressCalls.map(c => c.completed).sort()
+    expect(completedCounts).toContain(3)
+  })
+
+  it('should respect concurrency limit', async () => {
+    let maxConcurrent = 0
+    let currentConcurrent = 0
+
+    const trackedAdd = defineRpcFunction({
+      name: 'trackedAdd',
+      handler: async (a: number, b: number) => {
+        currentConcurrent++
+        maxConcurrent = Math.max(maxConcurrent, currentConcurrent)
+        await new Promise(resolve => setTimeout(resolve, 10))
+        currentConcurrent--
+        return a + b
+      },
+      dump: {
+        inputs: [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]],
+      },
+    })
+
+    await dumpFunctions([trackedAdd], undefined, {
+      concurrency: 2,
+    })
+
+    // With concurrency limit of 2, max concurrent should never exceed 2
+    expect(maxConcurrent).toBeLessThanOrEqual(2)
+    expect(maxConcurrent).toBeGreaterThan(0)
+  })
 })

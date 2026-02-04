@@ -1,14 +1,14 @@
 import type {
   BirpcReturn,
   RpcDefinitionsToFunctions,
-  RpcDump,
   RpcDumpClientOptions,
+  RpcDumpCollectionOptions,
   RpcDumpDefinition,
   RpcDumpStore,
   RpcFunctionDefinitionAny,
 } from './types'
 import { hash } from 'ohash'
-import { getRpcHandler } from './handler'
+import pLimit from 'p-limit'
 import { validateDefinitions } from './validation'
 
 /**
@@ -17,7 +17,7 @@ import { validateDefinitions } from './validation'
  *
  * @example
  * ```ts
- * const store = await dumpFunctions([greet], context)
+ * const store = await dumpFunctions([greet], context, { concurrency: 10 })
  * ```
  */
 export async function dumpFunctions<
@@ -25,94 +25,152 @@ export async function dumpFunctions<
 >(
   definitions: T,
   context?: any,
-  options?: {
-    parallel?: boolean
-    onProgress?: (completed: number, total: number, functionName: string) => void
-  },
+  options: RpcDumpCollectionOptions = {},
 ): Promise<RpcDumpStore<RpcDefinitionsToFunctions<T>>> {
   validateDefinitions(definitions)
+  const concurrency = options.concurrency === true
+    ? 5
+    : options.concurrency === false || options.concurrency == null
+      ? 1
+      : options.concurrency
 
   const store: RpcDumpStore = {
     definitions: {},
     records: {},
   }
 
-  for (const definition of definitions) {
-    const dump: RpcDump | undefined = definition.dump
-    let handler: (...args: any[]) => any
-    let setupDump: RpcDumpDefinition | undefined
+  // #region Definition resolution
+  interface TaskResolution {
+    handler: (...args: any[]) => any
+    dump: RpcDumpDefinition
+    definition: RpcFunctionDefinitionAny
+  }
 
-    // Fresh setup results needed to support different dump contexts
-    if (definition.setup) {
-      const setupResult = await Promise.resolve(definition.setup(context))
-      handler = setupResult.handler
-      if (setupResult.dump) {
-        setupDump = setupResult.dump
-      }
-    }
-    else {
-      handler = await getRpcHandler(definition, context)
+  const tasksResolutions: (() => Promise<undefined | TaskResolution>)[] = definitions.map(definition => async () => {
+    if (definition.type === 'event' || definition.type === 'action') {
+      return undefined
     }
 
-    let finalDump = setupDump ?? dump
+    // Fresh setup results for each context to avoid caching issues
+    const setupResult = definition.setup
+      ? await Promise.resolve(definition.setup(context))
+      : {}
 
-    if (!finalDump && definition.type === 'static') {
-      finalDump = { inputs: [[]] }
+    const handler = setupResult.handler || definition.handler
+    if (!handler) {
+      throw new Error(`[birpc-x] Either handler or setup function must be provided for RPC function "${definition.name}"`)
     }
 
-    if (!finalDump) {
-      continue
+    let dump = setupResult.dump ?? definition.dump
+    if (!dump && definition.type === 'static') {
+      dump = { inputs: [[]] }
     }
 
-    let dumpDefinition: RpcDumpDefinition
-    if (typeof finalDump === 'function') {
-      dumpDefinition = await Promise.resolve(finalDump(context, handler))
-    }
-    else {
-      dumpDefinition = finalDump
+    if (!dump) {
+      return undefined
     }
 
+    if (typeof dump === 'function') {
+      dump = await Promise.resolve(dump(context, handler))
+    }
+
+    // Only add to definitions if it has a dump
     store.definitions[definition.name] = {
       name: definition.name,
       type: definition.type,
     }
 
-    const { inputs, fallback } = dumpDefinition
+    return {
+      handler,
+      dump,
+      definition,
+    }
+  })
+
+  let functionsToDump: TaskResolution[] = []
+  if (concurrency <= 1) {
+    for (const task of tasksResolutions) {
+      const resolution = await task()
+      if (resolution) {
+        functionsToDump.push(resolution)
+      }
+    }
+  }
+  else {
+    const limit = pLimit(concurrency)
+    functionsToDump = (await Promise.all(tasksResolutions.map(task => limit(task)))).filter(x => !!x)
+  }
+  // #endregion
+
+  // #region Dump execution
+  const dumpTasks: Array<() => Promise<void>> = []
+  for (const { definition, handler, dump } of functionsToDump) {
+    const { inputs, records, fallback } = dump
     let recordCount = 0
+    const totalCount = (inputs?.length || 0) + (records?.length || 0)
 
-    for (const input of inputs) {
-      const argsHash = hash(input)
-      const recordKey = `${definition.name}---${argsHash}`
+    // Add pre-defined records
+    if (records) {
+      for (const record of records) {
+        const argsHash = hash(record.inputs)
+        const recordKey = `${definition.name}---${argsHash}`
+        store.records[recordKey] = record
 
-      try {
-        const output = await Promise.resolve(handler(...input))
-        store.records[recordKey] = {
-          inputs: input,
-          output,
-        }
+        recordCount++
+        options?.onProgress?.(recordCount, totalCount, definition.name)
       }
-      catch (error: any) {
-        store.records[recordKey] = {
-          inputs: input,
-          error: {
-            message: error.message,
-            name: error.name,
-            stack: error.stack,
-          },
-        }
-      }
-
-      recordCount++
-      options?.onProgress?.(recordCount, inputs.length, definition.name)
     }
 
-    if (fallback !== undefined) {
+    // Add fallback record
+    if ('fallback' in dump) {
       store.records[`${definition.name}---fallback`] = {
         inputs: [],
         output: fallback,
       }
     }
+
+    // Add input records execution tasks
+    if (inputs) {
+      for (const input of inputs) {
+        dumpTasks.push(async () => {
+          const argsHash = hash(input)
+          const recordKey = `${definition.name}---${argsHash}`
+
+          try {
+            const output = await Promise.resolve(handler(...input))
+            store.records[recordKey] = {
+              inputs: input,
+              output,
+            }
+          }
+          catch (error: any) {
+            store.records[recordKey] = {
+              inputs: input,
+              error: {
+                message: error.message,
+                name: error.name,
+                stack: error.stack,
+              },
+            }
+          }
+
+          recordCount++
+          options?.onProgress?.(recordCount, totalCount, definition.name)
+        })
+      }
+    }
   }
+
+  if (concurrency <= 1) {
+    for (const task of dumpTasks) {
+      await task()
+    }
+  }
+  else {
+    const limit = pLimit(concurrency)
+    await Promise.all(dumpTasks.map(task => limit(task)))
+  }
+  // #endregion
 
   return store
 }

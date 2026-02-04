@@ -42,6 +42,7 @@
   "dependencies": {
     "birpc": "catalog:prod",
     "ohash": "catalog:prod",
+    "p-limit": "catalog:prod",
     "structured-clone-es": "catalog:prod",
     "valibot": "catalog:prod"
   },

@@ -1,5 +1,3 @@
-catalogMode: prefer
-
 ignoreWorkspaceRootCheck: true
 
 shellEmulator: true
@@ -11,7 +9,6 @@ packages:
   - docs
   - packages/*
   - examples/*
-
 catalogs:
   cli:
     '@antfu/eslint-config': ^6.7.3
@@ -30,6 +27,7 @@ catalogs:
   prod:
     birpc: ^4.0.0
     ohash: ^2.0.11
+    p-limit: ^7.3.0
     structured-clone-es: ^1.0.0
     valibot: ^1.2.0
   testing:
