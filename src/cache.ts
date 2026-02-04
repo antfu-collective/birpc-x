@@ -5,6 +5,9 @@ export interface RpcCacheOptions {
   keySerializer?: (args: unknown[]) => string
 }
 
+/**
+ * @experimental API is expected to change.
+ */
 export class RpcCacheManager {
   private cacheMap = new Map<string, Map<string, unknown>>()
   private options: RpcCacheOptions
