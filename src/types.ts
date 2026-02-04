@@ -160,6 +160,8 @@ export type RpcFunctionDefinition<
         name: NAME
         /** Function type (static, action, event, or query) */
         type?: TYPE
+        /** Whether the function results should be cached */
+        cacheable?: boolean
         /** Valibot schema array for validating function arguments */
         args?: AS
         /** Valibot schema for validating function return value */
@@ -178,6 +180,8 @@ export type RpcFunctionDefinition<
         name: NAME
         /** Function type (static, action, event, or query) */
         type?: TYPE
+        /** Whether the function results should be cached */
+        cacheable?: boolean
         /** Valibot schema array for validating function arguments */
         args: AS
         /** Valibot schema for validating function return value */

@@ -1,3 +1,4 @@
+export * from './cache'
 export * from './collector'
 export * from './define'
 export * from './dumps'

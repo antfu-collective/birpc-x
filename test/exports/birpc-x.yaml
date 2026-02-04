@@ -6,6 +6,7 @@
   getDefinitionsWithDumps: function
   getRpcHandler: function
   getRpcResolvedSetupResult: function
+  RpcCacheManager: function
   RpcFunctionsCollectorBase: function
   validateDefinition: function
   validateDefinitions: function

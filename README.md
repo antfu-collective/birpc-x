@@ -19,6 +19,7 @@ On top of [`birpc`](https://github.com/antfu-collective/birpc), `birpc-x` adds t
 - Dynamically registerable functions
 - User-provided function context
 - Schema-validation via [`valibot`](https://valibot.dev)
+- Cache Manager for RPC results
 
 ## Installation
 
