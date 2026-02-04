@@ -9,7 +9,7 @@
 Extensible [birpc](https://github.com/antfu-collective/birpc) interfaces.
 
 > [!IMPORTANT]
-> Experimental. API may change anytime.
+> This package is DEPRECATED. It's has been merged into Vite DevTools via [this PR](https://github.com/vitejs/devtools/pull/170).
 
 ## Features
 
